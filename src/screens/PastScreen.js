@@ -19,6 +19,13 @@ const TYPE_LABELS = {
   diger: "Diğer"
 };
 
+const FILTERS = [
+  { key: "all", label: "Tümü" },
+  { key: "dogum_gunu", label: "Doğum Günü" },
+  { key: "yildonumu", label: "Yıldönümü" },
+  { key: "diger", label: "Diğer" }
+];
+
 const isValidDateString = (s) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(s))) return false;
   const [y, m, d] = String(s).split("-").map(Number);
@@ -58,6 +65,8 @@ export default function PastScreen() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ title: "", note: "", type: "diger", date: "" });
 
+  const [filter, setFilter] = useState("all");
+
   const loadEvents = useCallback(async () => {
     const user = auth.currentUser;
     if (!user) {
@@ -82,13 +91,18 @@ export default function PastScreen() {
     }, [loadEvents])
   );
 
-  const past = useMemo(() => {
+  const pastAll = useMemo(() => {
     return events
       .filter((e) => !!e?.date)
       .map((e) => ({ ...e, diff: daysPassed(e.date) }))
       .filter((e) => typeof e.diff === "number" && e.diff > 0)
       .sort((a, b) => a.diff - b.diff);
   }, [events]);
+
+  const past = useMemo(() => {
+    if (filter === "all") return pastAll;
+    return pastAll.filter((e) => (e.type || "diger") === filter);
+  }, [pastAll, filter]);
 
   const toggle = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -105,9 +119,7 @@ export default function PastScreen() {
     });
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
+  const cancelEdit = () => setEditingId(null);
 
   const showMsg = (msg) => {
     if (Platform.OS === "web") window.alert(msg);
@@ -173,10 +185,32 @@ export default function PastScreen() {
 
   return (
     <View style={{ flex: 1, padding: 12 }}>
-      <Text style={{ fontSize: 18, fontWeight: "800", marginBottom: 12 }}>Geçmiş Günler</Text>
+      <Text style={{ fontSize: 18, fontWeight: "800", marginBottom: 8 }}>Geçmiş Günler</Text>
+
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            onPress={() => setFilter(f.key)}
+            activeOpacity={0.85}
+            style={{
+              borderWidth: 1,
+              borderColor: filter === f.key ? "#000" : "#ddd",
+              backgroundColor: filter === f.key ? "#000" : "#fff",
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 999
+            }}
+          >
+            <Text style={{ fontWeight: "900", color: filter === f.key ? "#fff" : "#000" }}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {past.length === 0 ? (
-        <Text style={{ fontWeight: "600" }}>Geçmiş özel gün yok.</Text>
+        <Text style={{ fontWeight: "600" }}>Bu filtrede geçmiş özel gün yok.</Text>
       ) : (
         <FlatList
           data={past}
