@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, ActivityIndicator, FlatList, TouchableOpacity, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth } from "../services/firebase";
-import { getEvents } from "../services/eventService";
+import { getEvents, deleteEvent } from "../services/eventService";
 
 const TYPE_LABELS = {
   dogum_gunu: "Doğum Günü",
@@ -68,6 +68,28 @@ export default function UpcomingScreen() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
+  const confirmDelete = (item) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    Alert.alert(
+      "Silinsin mi?",
+      `"${item.title || "-"}" kaydını silmek istediğine emin misin?`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: async () => {
+            await deleteEvent(user.uid, item.id);
+            setExpandedId(null);
+            loadEvents();
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -111,9 +133,23 @@ export default function UpcomingScreen() {
                 <Text style={{ marginTop: 6 }}>Tarih: {item.date}</Text>
 
                 {open && (
-                  <View style={{ marginTop: 10, gap: 4 }}>
+                  <View style={{ marginTop: 10, gap: 6 }}>
                     <Text>Tür: {TYPE_LABELS[item.type] || "Diğer"}</Text>
                     {!!item.note && <Text>Not: {item.note}</Text>}
+
+                    <TouchableOpacity
+                      onPress={() => confirmDelete(item)}
+                      activeOpacity={0.85}
+                      style={{
+                        marginTop: 8,
+                        backgroundColor: "#d00000",
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                        alignItems: "center"
+                      }}
+                    >
+                      <Text style={{ color: "white", fontWeight: "800" }}>Sil</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </TouchableOpacity>

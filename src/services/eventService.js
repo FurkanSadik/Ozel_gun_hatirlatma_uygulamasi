@@ -1,4 +1,13 @@
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  getDocs,
+  query,
+  orderBy,
+  doc,
+  deleteDoc
+} from "firebase/firestore";
 import { db } from "./firebase";
 
 export async function addEvent(uid, data) {
@@ -12,4 +21,9 @@ export async function getEvents(uid) {
   const q = query(ref, orderBy("date", "asc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function deleteEvent(uid, eventId) {
+  const ref = doc(db, "users", uid, "events", eventId);
+  await deleteDoc(ref);
 }

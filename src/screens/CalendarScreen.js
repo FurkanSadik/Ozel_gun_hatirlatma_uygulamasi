@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth } from "../services/firebase";
-import { getEvents } from "../services/eventService";
+import { getEvents, deleteEvent } from "../services/eventService";
 
 const TYPE_COLORS = {
   dogum_gunu: "#9b59b6",
@@ -84,6 +84,28 @@ export default function CalendarScreen() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
+  const confirmDelete = (ev) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    Alert.alert(
+      "Silinsin mi?",
+      `"${ev.title || "-"}" kaydını silmek istediğine emin misin?`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: async () => {
+            await deleteEvent(user.uid, ev.id);
+            setExpandedId(null);
+            loadEvents();
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -132,16 +154,27 @@ export default function CalendarScreen() {
                     padding: 12
                   }}
                 >
-                  <Text style={{ fontWeight: "800", marginBottom: 4 }}>
-                    {ev.title || "-"}
-                  </Text>
-
+                  <Text style={{ fontWeight: "800", marginBottom: 4 }}>{ev.title || "-"}</Text>
                   <Text>Tür: {TYPE_LABELS[ev.type] || "Diğer"}</Text>
 
                   {open && (
-                    <View style={{ marginTop: 8, gap: 4 }}>
+                    <View style={{ marginTop: 8, gap: 6 }}>
                       <Text>Tarih: {ev.date}</Text>
                       {!!ev.note && <Text>Not: {ev.note}</Text>}
+
+                      <TouchableOpacity
+                        onPress={() => confirmDelete(ev)}
+                        activeOpacity={0.85}
+                        style={{
+                          marginTop: 6,
+                          backgroundColor: "#d00000",
+                          paddingVertical: 10,
+                          borderRadius: 10,
+                          alignItems: "center"
+                        }}
+                      >
+                        <Text style={{ color: "white", fontWeight: "800" }}>Sil</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </TouchableOpacity>
