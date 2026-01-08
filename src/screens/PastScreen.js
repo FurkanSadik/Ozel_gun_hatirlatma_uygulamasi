@@ -1,10 +1,134 @@
-import React from "react";
-import { View, Text } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { View, Text, ActivityIndicator, FlatList, TouchableOpacity } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { auth } from "../services/firebase";
+import { getEvents } from "../services/eventService";
+
+const TYPE_LABELS = {
+  dogum_gunu: "Doğum Günü",
+  yildonumu: "Yıldönümü",
+  diger: "Diğer"
+};
+
+const parseLocalDate = (dateStr) => {
+  const parts = String(dateStr).split("-");
+  if (parts.length !== 3) return null;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+};
+
+const startOfDay = (dt) => {
+  const x = new Date(dt);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+
+const daysPassed = (dateStr) => {
+  const target = parseLocalDate(dateStr);
+  if (!target) return null;
+  const today = startOfDay(new Date());
+  const t = startOfDay(target);
+  return Math.floor((today - t) / (1000 * 60 * 60 * 24));
+};
 
 export default function PastScreen() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const loadEvents = useCallback(async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const list = await getEvents(user.uid);
+      setEvents(Array.isArray(list) ? list : []);
+    } catch (e) {
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadEvents();
+    }, [loadEvents])
+  );
+
+  const past = useMemo(() => {
+    return events
+      .filter((e) => !!e?.date)
+      .map((e) => ({ ...e, diff: daysPassed(e.date) }))
+      .filter((e) => typeof e.diff === "number" && e.diff > 0)
+      .sort((a, b) => a.diff - b.diff);
+  }, [events]);
+
+  const toggle = (id) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10, fontWeight: "600" }}>Yükleniyor...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>Geçmiş Günler</Text>
+    <View style={{ flex: 1, padding: 12 }}>
+      <Text style={{ fontSize: 18, fontWeight: "800", marginBottom: 12 }}>Geçmiş Günler</Text>
+
+      {past.length === 0 ? (
+        <Text style={{ fontWeight: "600" }}>Geçmiş özel gün yok.</Text>
+      ) : (
+        <FlatList
+          data={past}
+          keyExtractor={(item) => item.id}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          renderItem={({ item }) => {
+            const open = expandedId === item.id;
+            return (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => toggle(item.id)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: open ? "#000" : "#ddd",
+                  borderRadius: 12,
+                  padding: 12
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ fontWeight: "800", flex: 1, paddingRight: 10 }}>{item.title || "-"}</Text>
+                  <Text style={{ fontWeight: "800" }}>{item.diff === 1 ? "1g" : `${item.diff}g`}</Text>
+                </View>
+
+                <Text style={{ marginTop: 6 }}>Tarih: {item.date}</Text>
+
+                {open && (
+                  <View style={{ marginTop: 10, gap: 4 }}>
+                    <Text>Tür: {TYPE_LABELS[item.type] || "Diğer"}</Text>
+                    <Text style={{ fontWeight: "800" }}>
+                      {item.diff === 1 ? "1 gün geçti" : `${item.diff} gün geçti`}
+                    </Text>
+                    {!!item.note && <Text>Not: {item.note}</Text>}
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
     </View>
   );
 }

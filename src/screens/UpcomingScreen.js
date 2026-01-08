@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, FlatList } from "react-native";
+import { View, Text, ActivityIndicator, FlatList, TouchableOpacity } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth } from "../services/firebase";
 import { getEvents } from "../services/eventService";
@@ -11,10 +11,17 @@ const TYPE_LABELS = {
 };
 
 const daysUntil = (dateStr) => {
+  const parts = String(dateStr).split("-");
+  if (parts.length !== 3) return null;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (!y || !m || !d) return null;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const target = new Date(dateStr);
+  const target = new Date(y, m - 1, d);
   target.setHours(0, 0, 0, 0);
 
   return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
@@ -23,6 +30,7 @@ const daysUntil = (dateStr) => {
 export default function UpcomingScreen() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
   const loadEvents = useCallback(async () => {
     const user = auth.currentUser;
@@ -31,7 +39,6 @@ export default function UpcomingScreen() {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       const list = await getEvents(user.uid);
@@ -53,9 +60,13 @@ export default function UpcomingScreen() {
     return events
       .filter((e) => !!e?.date)
       .map((e) => ({ ...e, diff: daysUntil(e.date) }))
-      .filter((e) => e.diff >= 0)
+      .filter((e) => typeof e.diff === "number" && e.diff >= 0)
       .sort((a, b) => a.diff - b.diff);
   }, [events]);
+
+  const toggle = (id) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
 
   if (loading) {
     return (
@@ -68,9 +79,7 @@ export default function UpcomingScreen() {
 
   return (
     <View style={{ flex: 1, padding: 12 }}>
-      <Text style={{ fontSize: 18, fontWeight: "800", marginBottom: 12 }}>
-        Yaklaşan Günler
-      </Text>
+      <Text style={{ fontSize: 18, fontWeight: "800", marginBottom: 12 }}>Yaklaşan Günler</Text>
 
       {upcoming.length === 0 ? (
         <Text style={{ fontWeight: "600" }}>Yaklaşan özel gün yok.</Text>
@@ -79,30 +88,37 @@ export default function UpcomingScreen() {
           data={upcoming}
           keyExtractor={(item) => item.id}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "#ddd",
-                borderRadius: 12,
-                padding: 12
-              }}
-            >
-              <Text style={{ fontWeight: "800", marginBottom: 4 }}>
-                {item.title || "-"}
-              </Text>
-              <Text>Tarih: {item.date}</Text>
-              <Text>Tür: {TYPE_LABELS[item.type] || "Diğer"}</Text>
-              <Text style={{ marginTop: 6, fontWeight: "800" }}>
-                {item.diff === 0
-                  ? "Bugün"
-                  : item.diff === 1
-                  ? "Yarın"
-                  : `${item.diff} gün kaldı`}
-              </Text>
-              {!!item.note && <Text style={{ marginTop: 6 }}>Not: {item.note}</Text>}
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const open = expandedId === item.id;
+            return (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => toggle(item.id)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: open ? "#000" : "#ddd",
+                  borderRadius: 12,
+                  padding: 12
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ fontWeight: "800", flex: 1, paddingRight: 10 }}>{item.title || "-"}</Text>
+                  <Text style={{ fontWeight: "800" }}>
+                    {item.diff === 0 ? "Bugün" : item.diff === 1 ? "Yarın" : `${item.diff}g`}
+                  </Text>
+                </View>
+
+                <Text style={{ marginTop: 6 }}>Tarih: {item.date}</Text>
+
+                {open && (
+                  <View style={{ marginTop: 10, gap: 4 }}>
+                    <Text>Tür: {TYPE_LABELS[item.type] || "Diğer"}</Text>
+                    {!!item.note && <Text>Not: {item.note}</Text>}
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
     </View>

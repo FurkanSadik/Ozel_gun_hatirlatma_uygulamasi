@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth } from "../services/firebase";
@@ -21,6 +21,7 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState("");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
   const loadEvents = useCallback(async () => {
     const user = auth.currentUser;
@@ -52,6 +53,7 @@ export default function CalendarScreen() {
     for (const ev of events) {
       const d = ev?.date;
       if (!d) continue;
+
       const color = TYPE_COLORS[ev?.type] || "#000";
 
       if (!marks[d]) {
@@ -69,6 +71,7 @@ export default function CalendarScreen() {
         selectedColor: existing.selectedColor || "#000"
       };
     }
+
     return marks;
   }, [events, selectedDate]);
 
@@ -77,57 +80,76 @@ export default function CalendarScreen() {
     return events.filter((e) => e?.date === selectedDate);
   }, [events, selectedDate]);
 
+  const toggle = (id) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10, fontWeight: "600" }}>Yükleniyor...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, padding: 12 }}>
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator />
-          <Text style={{ marginTop: 10, fontWeight: "600" }}>Yükleniyor...</Text>
-        </View>
-      ) : (
-        <>
-          <Calendar
-            onDayPress={(day) => setSelectedDate(day.dateString)}
-            markedDates={markedDates}
-            theme={{
-              todayTextColor: "black",
-              arrowColor: "black"
-            }}
-          />
+      <Calendar
+        onDayPress={(day) => {
+          setSelectedDate(day.dateString);
+          setExpandedId(null);
+        }}
+        markedDates={markedDates}
+        theme={{
+          todayTextColor: "black",
+          arrowColor: "black"
+        }}
+      />
 
-          <View style={{ paddingTop: 14 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", marginBottom: 8 }}>
-              Seçili Gün: {selectedDate || "-"}
-            </Text>
+      <View style={{ paddingTop: 14 }}>
+        <Text style={{ fontSize: 14, fontWeight: "800", marginBottom: 8 }}>
+          Seçili Gün: {selectedDate || "-"}
+        </Text>
 
-            {!selectedDate ? (
-              <Text style={{ fontWeight: "600" }}>Detay görmek için bir gün seç.</Text>
-            ) : selectedDayEvents.length === 0 ? (
-              <Text style={{ fontWeight: "600" }}>Bu güne ait özel gün yok.</Text>
-            ) : (
-              <View style={{ gap: 8 }}>
-                {selectedDayEvents.map((ev) => (
-                  <View
-                    key={ev.id}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: "#ddd",
-                      borderRadius: 12,
-                      padding: 12
-                    }}
-                  >
-                    <Text style={{ fontWeight: "800", marginBottom: 4 }}>
-                      {ev.title || "-"}
-                    </Text>
-                    <Text>Tür: {TYPE_LABELS[ev.type] || "Diğer"}</Text>
-                    {!!ev.note && <Text>Not: {ev.note}</Text>}
-                  </View>
-                ))}
-              </View>
-            )}
+        {!selectedDate ? (
+          <Text style={{ fontWeight: "600" }}>Detay görmek için bir gün seç.</Text>
+        ) : selectedDayEvents.length === 0 ? (
+          <Text style={{ fontWeight: "600" }}>Bu güne ait özel gün yok.</Text>
+        ) : (
+          <View style={{ gap: 8 }}>
+            {selectedDayEvents.map((ev) => {
+              const open = expandedId === ev.id;
+              return (
+                <TouchableOpacity
+                  key={ev.id}
+                  activeOpacity={0.85}
+                  onPress={() => toggle(ev.id)}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: open ? "#000" : "#ddd",
+                    borderRadius: 12,
+                    padding: 12
+                  }}
+                >
+                  <Text style={{ fontWeight: "800", marginBottom: 4 }}>
+                    {ev.title || "-"}
+                  </Text>
+
+                  <Text>Tür: {TYPE_LABELS[ev.type] || "Diğer"}</Text>
+
+                  {open && (
+                    <View style={{ marginTop: 8, gap: 4 }}>
+                      <Text>Tarih: {ev.date}</Text>
+                      {!!ev.note && <Text>Not: {ev.note}</Text>}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </>
-      )}
+        )}
+      </View>
     </View>
   );
 }
