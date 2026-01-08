@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { Text } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -29,14 +29,8 @@ export default function TabsNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerTitleAlign: "center",
-        tabBarStyle: {
-          height: 68,
-          paddingBottom: 6,
-          paddingTop: 6
-        },
-        tabBarItemStyle: {
-          justifyContent: "center"
-        },
+        tabBarStyle: { height: 68, paddingBottom: 6, paddingTop: 6 },
+        tabBarItemStyle: { justifyContent: "center" },
         tabBarIcon: ({ focused }) => {
           let iconName = "";
           let iconColor = "";
@@ -67,42 +61,31 @@ export default function TabsNavigator() {
         component={UpcomingScreen}
         options={{
           title: "Yaklaşan Günler",
-          tabBarLabel: ({ focused }) => (
-            <TabLabel text={"Yaklaşan\nGünler"} focused={focused} />
-          )
+          tabBarLabel: ({ focused }) => <TabLabel text={"Yaklaşan\nGünler"} focused={focused} />
         }}
       />
-
       <Tab.Screen
         name="Calendar"
         component={CalendarScreen}
         options={{
           title: "Takvim",
-          tabBarLabel: ({ focused }) => (
-            <TabLabel text={"Takvim"} focused={focused} />
-          )
+          tabBarLabel: ({ focused }) => <TabLabel text={"Takvim"} focused={focused} />
         }}
       />
-
       <Tab.Screen
         name="Past"
         component={PastScreen}
         options={{
           title: "Geçmiş Günler",
-          tabBarLabel: ({ focused }) => (
-            <TabLabel text={"Geçmiş\nGünler"} focused={focused} />
-          )
+          tabBarLabel: ({ focused }) => <TabLabel text={"Geçmiş\nGünler"} focused={focused} />
         }}
       />
-
       <Tab.Screen
         name="Account"
         component={AccountScreen}
         options={{
           title: "Hesap",
-          tabBarLabel: ({ focused }) => (
-            <TabLabel text={"Hesap"} focused={focused} />
-          )
+          tabBarLabel: ({ focused }) => <TabLabel text={"Hesap"} focused={focused} />
         }}
       />
     </Tab.Navigator>
