@@ -8,12 +8,14 @@ import {
   Alert,
   Platform,
   ScrollView,
-  RefreshControl
+  RefreshControl,
+  Switch
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth } from "../services/firebase";
 import { signOut } from "firebase/auth";
 import { ensureUserDoc, getUserProfile, updateUserProfile } from "../services/userService";
+import { useAppTheme } from "../contexts/ThemeContext";
 
 const GENDERS = [
   { key: "erkek", label: "Erkek" },
@@ -28,6 +30,8 @@ const isValidDateString = (s) => {
 };
 
 export default function AccountScreen() {
+  const { mode, toggleTheme } = useAppTheme();
+
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
 
@@ -98,7 +102,8 @@ export default function AccountScreen() {
 
     if (!name) return showMsg("Uyarı", "Ad Soyad boş olamaz.");
     if (!birthDate) return showMsg("Uyarı", "Doğum tarihi boş olamaz. Örn: 2002-05-14");
-    if (!isValidDateString(birthDate)) return showMsg("Uyarı", "Doğum tarihi formatı geçersiz. Örn: 2002-05-14");
+    if (!isValidDateString(birthDate))
+      return showMsg("Uyarı", "Doğum tarihi formatı geçersiz. Örn: 2002-05-14");
 
     try {
       setLoading(true);
@@ -138,6 +143,16 @@ export default function AccountScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={{ fontSize: 18, fontWeight: "900" }}>Hesap</Text>
+
+      <View style={{ borderWidth: 1, borderColor: "#ddd", borderRadius: 14, padding: 12, backgroundColor: "white" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={{ fontWeight: "900" }}>Karanlık Mod</Text>
+          <Switch value={mode === "dark"} onValueChange={toggleTheme} />
+        </View>
+        <Text style={{ marginTop: 6, color: "#444", fontWeight: "700" }}>
+          {mode === "dark" ? "Açık" : "Kapalı"}
+        </Text>
+      </View>
 
       <View style={{ borderWidth: 1, borderColor: "#ddd", borderRadius: 14, padding: 12, backgroundColor: "white" }}>
         <Text style={{ fontWeight: "900", marginBottom: 8 }}>Hesap Bilgileri</Text>
