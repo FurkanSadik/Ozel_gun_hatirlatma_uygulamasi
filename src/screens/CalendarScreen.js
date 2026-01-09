@@ -37,7 +37,6 @@ const isValidDateString = (s) => {
   return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
 };
 
-// Etkinlik tipine göre işaretleme rengi (takvim üstündeki gün balonu)
 const COLORS = {
   multi: "#ef4444",
   dogum_gunu: "#facc15",

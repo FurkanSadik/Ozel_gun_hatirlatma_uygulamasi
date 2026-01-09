@@ -24,7 +24,6 @@ export default function RootNavigator() {
     return unsub;
   }, []);
 
-  // ✅ Boş ekran yerine yükleniyor ekranı
   if (hydrating || !ready) {
     return (
       <View

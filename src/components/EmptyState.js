@@ -6,12 +6,12 @@ export default function EmptyState({
   emoji = "✨",
   title = "Boş",
   subtitle = "",
-  variant = "default" // "default" | "soft"
+  variant = "default" 
 }) {
   const { navTheme, mode } = useAppTheme();
   const C = navTheme.colors;
 
-  const softBg = mode === "dark" ? "#2a1216" : "#fff1f2";   // bordo/pembe ton
+  const softBg = mode === "dark" ? "#2a1216" : "#fff1f2";  
   const softBorder = mode === "dark" ? "#7f1d1d" : "#fecdd3";
 
   const containerStyle =

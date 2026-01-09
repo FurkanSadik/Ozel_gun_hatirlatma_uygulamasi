@@ -59,7 +59,6 @@ export default function TabsNavigator() {
       screenOptions={({ route }) => ({
         headerTitleAlign: "center",
 
-        // ✅ Tema ile uyumlu alt bar
         tabBarStyle: {
           height: 72,
           paddingBottom: 8,
@@ -94,7 +93,6 @@ export default function TabsNavigator() {
 
           if (route.name === "Account") {
             iconName = focused ? "settings" : "settings-outline";
-            // ✅ Dark modda daha görünür
             iconColor = navTheme.dark ? "#cbd5e1" : "#2c3e50";
           }
 
